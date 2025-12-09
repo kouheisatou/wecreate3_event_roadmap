@@ -23,9 +23,10 @@ interface SubTaskRow {
 }
 
 export const parseTasks = async (): Promise<Task[]> => {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const [tasksRes, subtasksRes] = await Promise.all([
-    fetch('/tasks.csv'),
-    fetch('/subtasks.csv')
+    fetch(`${basePath}/tasks.csv`),
+    fetch(`${basePath}/subtasks.csv`)
   ]);
 
   const [tasksCsv, subtasksCsv] = await Promise.all([
@@ -59,7 +60,7 @@ export const parseTasks = async (): Promise<Task[]> => {
     if (row.template_files) {
       const templatePath = row.template_files;
       templatePromises.push(
-        fetch(`/${templatePath}`)
+        fetch(`${basePath}/${templatePath}`)
           .then(res => res.ok ? res.text() : '')
           .then(content => {
             subtask.template_content = content;
