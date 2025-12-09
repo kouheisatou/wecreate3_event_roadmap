@@ -44,15 +44,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-screen w-full flex flex-col">
-      <header className="bg-slate-900 text-white p-4 shadow-md z-10">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          📅 Event Task Manager
-        </h1>
-        <p className="text-xs text-slate-300">イベント開催のためのタスクネットワークマニュアル</p>
-      </header>
-      
-      <div className="flex-1 relative bg-slate-50">
+    <div className="h-screen w-full relative bg-slate-50">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -81,7 +73,6 @@ export default function Home() {
           <div className="flex items-center gap-2"><div className="w-3 h-3 bg-indigo-100 border border-gray-400 rounded"></div>デザイン</div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-100 border border-gray-400 rounded"></div>運営</div>
         </div>
-      </div>
 
       <TaskDialog 
         task={selectedTask} 
