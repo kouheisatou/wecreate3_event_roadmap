@@ -24,9 +24,12 @@ interface SubTaskRow {
 
 export const parseTasks = async (): Promise<Task[]> => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  // Ensure basePath does not end with a slash to avoid double slashes
+  const normalizedBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+
   const [tasksRes, subtasksRes] = await Promise.all([
-    fetch(`${basePath}/tasks.csv`),
-    fetch(`${basePath}/subtasks.csv`)
+    fetch(`${normalizedBasePath}/tasks.csv`),
+    fetch(`${normalizedBasePath}/subtasks.csv`)
   ]);
 
   const [tasksCsv, subtasksCsv] = await Promise.all([
@@ -59,8 +62,13 @@ export const parseTasks = async (): Promise<Task[]> => {
 
     if (row.template_files) {
       const templatePath = row.template_files;
+      // Ensure templatePath starts with a slash if normalizedBasePath is empty or doesn't end with one,
+      // but actually we just want to join them correctly.
+      // If templatePath doesn't start with /, add it.
+      const normalizedTemplatePath = templatePath.startsWith('/') ? templatePath : `/${templatePath}`;
+      
       templatePromises.push(
-        fetch(`${basePath}/${templatePath}`)
+        fetch(`${normalizedBasePath}${normalizedTemplatePath}`)
           .then(res => res.ok ? res.text() : '')
           .then(content => {
             subtask.template_content = content;
