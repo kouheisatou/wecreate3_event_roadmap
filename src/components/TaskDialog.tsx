@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { Task } from '@/types/task';
-import { X, CheckSquare, Lightbulb, Copy, FileText, ArrowLeft, Target, HelpCircle, Clock, Box } from 'lucide-react';
+import { X, CheckSquare, Copy, FileText, ArrowLeft, Target, HelpCircle, Clock, Box } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -44,13 +44,20 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
         inline ? (
           <code className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono text-sm" {...props} />
         ) : (
-          <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto font-mono text-sm leading-relaxed" {...props} />
+          <code className="block bg-gray-800 text-gray-50 p-4 rounded-lg overflow-x-auto font-mono text-sm leading-relaxed" style={{ backgroundColor: '#1f2937', color: '#f9fafb' }} {...props} />
         ),
-      pre: ({node, ...props}: any) => <pre className="bg-gray-900 rounded-lg my-4 overflow-hidden shadow-lg" {...props} />,
+      pre: ({node, ...props}: any) => <pre className="bg-gray-800 rounded-lg my-4 overflow-hidden shadow-lg" style={{ backgroundColor: '#1f2937' }} {...props} />,
       blockquote: ({node, ...props}: any) => <blockquote className="border-l-4 border-blue-500 bg-blue-50 pl-4 py-3 my-4 text-gray-700 italic" {...props} />,
-      ul: ({node, ...props}: any) => <ul className="list-disc list-inside space-y-2 mb-4 text-gray-700" {...props} />,
-      ol: ({node, ...props}: any) => <ol className="list-decimal list-inside space-y-2 mb-4 text-gray-700" {...props} />,
-      li: ({node, ...props}: any) => <li className="text-gray-700 leading-relaxed ml-4" {...props} />,
+      ul: ({node, ...props}: any) => <ul className="list-disc space-y-2 mb-4 text-gray-700 pl-6" {...props} />,
+      ol: ({node, ...props}: any) => <ol className="list-decimal space-y-3 mb-4 text-gray-700 pl-6" {...props} />,
+      li: ({node, ...props}: any) => {
+        const { children } = props;
+        return (
+          <li className="text-gray-700 leading-relaxed pl-2" {...props}>
+            <div className="inline">{children}</div>
+          </li>
+        );
+      },
       table: ({node, ...props}: any) => (
         <div className="overflow-x-auto my-4">
           <table className="min-w-full border-collapse border border-gray-300" {...props} />
@@ -154,51 +161,44 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                 <ScrollArea.Viewport className="w-full h-full rounded">
                   <div className="space-y-8 pr-4 pb-4">
                     
-                    {/* Checklist & Reason/Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <section className="bg-blue-50 p-5 rounded-lg border border-blue-100">
-                        <h3 className="flex items-center text-sm font-bold text-blue-800 mb-3 uppercase tracking-wide">
+                    {/* タスク概要とチェックリスト */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-gray-200 rounded-lg p-6">
+                      {/* 左：タスク概要 */}
+                      {task.overview && (
+                        <section className="md:pr-6 md:border-r border-gray-200">
+                          <h3 className="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
+                            <HelpCircle size={18} className="mr-2" />
+                            タスク概要
+                          </h3>
+                          <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap">
+                            {task.overview}
+                          </p>
+                        </section>
+                      )}
+                      {/* 右：完了定義（チェックリスト） */}
+                      <section className="md:pl-6">
+                        <h3 className="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
                           <CheckSquare size={18} className="mr-2" />
                           完了定義（チェックリスト）
                         </h3>
                         <ul className="space-y-2">
                           {task.checklist && task.checklist.length > 0 ? (
                             task.checklist.map((item, i) => (
-                              <li key={i} className="flex items-start text-blue-900 text-base font-medium leading-relaxed">
+                              <li key={i} className="flex items-start text-gray-700 text-base font-medium leading-relaxed">
                                 <input 
                                   type="checkbox" 
-                                  className="mt-1.5 mr-3 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 flex-shrink-0 pointer-events-none"
+                                  className="mt-1.5 mr-3 w-4 h-4 text-gray-600 rounded border-gray-300 focus:ring-gray-500 flex-shrink-0 pointer-events-none"
                                   readOnly
                                 />
                                 <span>{item}</span>
                               </li>
                             ))
                           ) : (
-                            <li className="text-blue-900/60 italic">（設定されていません）</li>
+                            <li className="text-gray-400 italic">（設定されていません）</li>
                           )}
                         </ul>
                       </section>
-                      <section className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                        <h3 className="flex items-center text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">
-                          <HelpCircle size={18} className="mr-2" />
-                          {task.overview ? 'タスク概要' : 'なぜやるのか'}
-                        </h3>
-                        <p className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
-                          {task.overview || task.reason || "（設定されていません）"}
-                        </p>
-                      </section>
                     </div>
-
-                    {/* Tips */}
-                    {task.tips && (
-                      <section className="bg-amber-50 p-4 rounded-lg border border-amber-200 border-l-4 border-l-amber-400">
-                        <h3 className="flex items-center text-md font-bold text-amber-800 mb-2">
-                          <Lightbulb size={20} className="mr-2 text-amber-600" />
-                          Tips / 経験則
-                        </h3>
-                        <p className="text-amber-900 text-sm leading-relaxed">{task.tips}</p>
-                      </section>
-                    )}
 
                     {/* Subtasks Table */}
                     <section>

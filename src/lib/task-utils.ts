@@ -8,10 +8,8 @@ interface TaskRow {
   title: string;
   category: string;
   dependencies: string;
-  tips: string;
   checklist: string;
-  reason: string;
-  overview?: string; // ルートタスクの概要説明
+  overview: string; // タスクの概要説明
 }
 
 interface SubTaskRow {
@@ -90,10 +88,8 @@ export const parseTasks = async (): Promise<Task[]> => {
       title: row.title,
       category: row.category,
       dependencies: row.dependencies ? row.dependencies.split('|').filter(Boolean) : [],
-      tips: row.tips,
       checklist: row.checklist ? row.checklist.split('|').filter(Boolean) : [],
-      reason: row.reason,
-      overview: row.overview, // ルートタスクの概要説明（オプショナル）
+      overview: row.overview || '', // タスクの概要説明
       subtasks: subtasksByTaskId.get(row.id) || [],
     };
   });
