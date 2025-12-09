@@ -11,6 +11,7 @@ interface TaskRow {
   tips: string;
   checklist: string;
   reason: string;
+  overview?: string; // ルートタスクの概要説明
 }
 
 interface SubTaskRow {
@@ -72,8 +73,8 @@ export const parseTasks = async (): Promise<Task[]> => {
             subtask.template_content = content;
           })
           .catch(e => {
-            console.error(`Failed to load template: ${templatePath}`, e);
-            subtask.template_content = 'Failed to load template.';
+            console.error(`Failed to load subtask detail: ${templatePath}`, e);
+            subtask.template_content = 'サブタスク詳細の読み込みに失敗しました。';
           })
       );
     }
@@ -92,6 +93,7 @@ export const parseTasks = async (): Promise<Task[]> => {
       tips: row.tips,
       checklist: row.checklist ? row.checklist.split('|').filter(Boolean) : [],
       reason: row.reason,
+      overview: row.overview, // ルートタスクの概要説明（オプショナル）
       subtasks: subtasksByTaskId.get(row.id) || [],
     };
   });

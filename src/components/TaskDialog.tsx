@@ -3,6 +3,8 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { Task } from '@/types/task';
 import { X, CheckSquare, Lightbulb, Copy, FileText, ArrowLeft, Target, HelpCircle, Clock, Box } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface TaskDialogProps {
   task: Task | null;
@@ -25,48 +27,91 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
     onClose();
   };
 
-  const TemplateViewer = ({ title, content, onBack }: { title: string, content: string, onBack: () => void }) => (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center mb-4 border-b pb-2 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
-          <Dialog.Title className="text-lg font-bold text-gray-900 m-0 truncate max-w-[500px]">
-            テンプレート: {title}
-          </Dialog.Title>
+  const TemplateViewer = ({ title, content, onBack }: { title: string, content: string, onBack: () => void }) => {
+    // カスタムマークダウンコンポーネント
+    const markdownComponents = {
+      h1: ({node, ...props}: any) => <h1 className="text-3xl font-bold text-gray-900 mt-6 mb-4 pb-2 border-b-2 border-gray-300" {...props} />,
+      h2: ({node, ...props}: any) => <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-3 pb-2 border-b border-gray-200" {...props} />,
+      h3: ({node, ...props}: any) => <h3 className="text-xl font-bold text-gray-800 mt-5 mb-2" {...props} />,
+      h4: ({node, ...props}: any) => <h4 className="text-lg font-bold text-gray-800 mt-4 mb-2" {...props} />,
+      h5: ({node, ...props}: any) => <h5 className="text-base font-bold text-gray-800 mt-3 mb-2" {...props} />,
+      h6: ({node, ...props}: any) => <h6 className="text-sm font-bold text-gray-700 mt-3 mb-2" {...props} />,
+      p: ({node, ...props}: any) => <p className="text-base text-gray-700 leading-relaxed mb-4" {...props} />,
+      a: ({node, ...props}: any) => <a className="text-blue-600 hover:text-blue-800 hover:underline font-medium" {...props} />,
+      strong: ({node, ...props}: any) => <strong className="font-bold text-gray-900" {...props} />,
+      em: ({node, ...props}: any) => <em className="italic text-gray-800" {...props} />,
+      code: ({node, inline, ...props}: any) => 
+        inline ? (
+          <code className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono text-sm" {...props} />
+        ) : (
+          <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto font-mono text-sm leading-relaxed" {...props} />
+        ),
+      pre: ({node, ...props}: any) => <pre className="bg-gray-900 rounded-lg my-4 overflow-hidden shadow-lg" {...props} />,
+      blockquote: ({node, ...props}: any) => <blockquote className="border-l-4 border-blue-500 bg-blue-50 pl-4 py-3 my-4 text-gray-700 italic" {...props} />,
+      ul: ({node, ...props}: any) => <ul className="list-disc list-inside space-y-2 mb-4 text-gray-700" {...props} />,
+      ol: ({node, ...props}: any) => <ol className="list-decimal list-inside space-y-2 mb-4 text-gray-700" {...props} />,
+      li: ({node, ...props}: any) => <li className="text-gray-700 leading-relaxed ml-4" {...props} />,
+      table: ({node, ...props}: any) => (
+        <div className="overflow-x-auto my-4">
+          <table className="min-w-full border-collapse border border-gray-300" {...props} />
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => copyToClipboard(content)}
-            className="text-xs flex items-center gap-1 bg-white border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 text-gray-700 transition-colors shadow-sm font-medium"
-          >
-            <Copy size={14} />
-            コピー
-          </button>
-          <Dialog.Close asChild>
-            <button
-              className="text-gray-400 hover:text-gray-500 focus:outline-none"
-              aria-label="Close"
-              onClick={handleClose}
-            >
-              <X size={24} />
+      ),
+      thead: ({node, ...props}: any) => <thead className="bg-gray-100" {...props} />,
+      tbody: ({node, ...props}: any) => <tbody className="bg-white" {...props} />,
+      tr: ({node, ...props}: any) => <tr className="border-b border-gray-300" {...props} />,
+      th: ({node, ...props}: any) => <th className="border border-gray-300 px-4 py-2 text-left font-bold text-gray-900" {...props} />,
+      td: ({node, ...props}: any) => <td className="border border-gray-300 px-4 py-2 text-gray-700" {...props} />,
+      hr: ({node, ...props}: any) => <hr className="my-6 border-t-2 border-gray-300" {...props} />,
+    };
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-center mb-4 border-b pb-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft size={20} className="text-gray-600" />
             </button>
-          </Dialog.Close>
+            <Dialog.Title className="text-lg font-bold text-gray-900 m-0 truncate max-w-[500px]">
+              サブタスク詳細: {title}
+            </Dialog.Title>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => copyToClipboard(content)}
+              className="text-xs flex items-center gap-1 bg-white border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 text-gray-700 transition-colors shadow-sm font-medium"
+            >
+              <Copy size={14} />
+              コピー
+            </button>
+            <Dialog.Close asChild>
+              <button
+                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                aria-label="Close"
+                onClick={handleClose}
+              >
+                <X size={24} />
+              </button>
+            </Dialog.Close>
+          </div>
         </div>
+        <ScrollArea.Root className="flex-1 w-full h-full overflow-hidden bg-white rounded relative border border-gray-100">
+          <ScrollArea.Viewport className="w-full h-full rounded p-6">
+            <div className="max-w-none">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {content}
+              </ReactMarkdown>
+            </div>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-gray-100 transition-colors duration-[160ms] ease-out hover:bg-gray-200 data-[orientation=vertical]:w-2.5 data-[orientation=horizontal]:flex-col data-[orientation=horizontal]:h-2.5">
+            <ScrollArea.Thumb className="flex-1 bg-gray-300 rounded-[10px] relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-full before:h-full before:min-w-[44px] before:min-h-[44px]" />
+          </ScrollArea.Scrollbar>
+        </ScrollArea.Root>
       </div>
-      <ScrollArea.Root className="flex-1 w-full h-full overflow-hidden bg-white rounded relative border border-gray-100">
-        <ScrollArea.Viewport className="w-full h-full rounded p-4">
-          <pre className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-mono">
-            {content}
-          </pre>
-        </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-gray-100 transition-colors duration-[160ms] ease-out hover:bg-gray-200 data-[orientation=vertical]:w-2.5 data-[orientation=horizontal]:flex-col data-[orientation=horizontal]:h-2.5">
-          <ScrollArea.Thumb className="flex-1 bg-gray-300 rounded-[10px] relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-full before:h-full before:min-w-[44px] before:min-h-[44px]" />
-        </ScrollArea.Scrollbar>
-      </ScrollArea.Root>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -109,7 +154,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                 <ScrollArea.Viewport className="w-full h-full rounded">
                   <div className="space-y-8 pr-4 pb-4">
                     
-                    {/* Checklist & Reason */}
+                    {/* Checklist & Reason/Overview */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <section className="bg-blue-50 p-5 rounded-lg border border-blue-100">
                         <h3 className="flex items-center text-sm font-bold text-blue-800 mb-3 uppercase tracking-wide">
@@ -136,10 +181,10 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                       <section className="bg-gray-50 p-5 rounded-lg border border-gray-200">
                         <h3 className="flex items-center text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">
                           <HelpCircle size={18} className="mr-2" />
-                          なぜやるのか
+                          {task.overview ? 'タスク概要' : 'なぜやるのか'}
                         </h3>
-                        <p className="text-gray-800 text-base leading-relaxed">
-                          {task.reason || "（設定されていません）"}
+                        <p className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap">
+                          {task.overview || task.reason || "（設定されていません）"}
                         </p>
                       </section>
                     </div>
@@ -175,7 +220,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                                 <span className="flex items-center gap-1"><Clock size={14}/> 時間</span>
                               </th>
                               <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">
-                                <span className="flex items-center gap-1"><FileText size={14}/> 雛形</span>
+                                <span className="flex items-center gap-1"><FileText size={14}/> 詳細</span>
                               </th>
                             </tr>
                           </thead>
@@ -199,7 +244,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                                     <button
                                       onClick={() => setViewingTemplate({ title: sub.title, content: sub.template_content! })}
                                       className="inline-flex items-center justify-center p-1.5 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 border border-purple-200 transition-colors"
-                                      title="テンプレートを表示"
+                                      title="詳細を表示"
                                     >
                                       <FileText size={16} />
                                       <span className="ml-1 text-xs font-medium">開く</span>

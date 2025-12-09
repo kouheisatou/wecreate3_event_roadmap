@@ -17,6 +17,7 @@ export interface Task {
   tips: string;
   checklist: string[];
   reason: string;
+  overview?: string; // ルートタスクの概要説明
   subtasks: SubTask[];
 }
 
