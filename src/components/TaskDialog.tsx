@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
+import React, { useState, useEffect } from 'react';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
 import { Task } from '@/types/task';
 import { X, CheckSquare, Copy, FileText, ArrowLeft, Target, HelpCircle, Clock, Box } from 'lucide-react';
@@ -15,7 +14,12 @@ interface TaskDialogProps {
 export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose }) => {
   const [viewingTemplate, setViewingTemplate] = useState<{ title: string; content: string } | null>(null);
 
-  if (!task) return null;
+  // タスクが変わった時にテンプレート表示をリセット
+  useEffect(() => {
+    setViewingTemplate(null);
+  }, [task?.id]);
+
+  if (!isOpen || !task) return null;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -78,9 +82,9 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
             <button onClick={onBack} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
               <ArrowLeft size={20} className="text-gray-600" />
             </button>
-            <Dialog.Title className="text-lg font-bold text-gray-900 m-0 truncate max-w-[500px]">
+            <h3 className="text-lg font-bold text-gray-900 m-0 truncate max-w-[500px]">
               サブタスク詳細: {title}
-            </Dialog.Title>
+            </h3>
           </div>
           <div className="flex items-center gap-2">
             <button 
@@ -90,15 +94,13 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
               <Copy size={14} />
               コピー
             </button>
-            <Dialog.Close asChild>
-              <button
-                className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                aria-label="Close"
-                onClick={handleClose}
-              >
-                <X size={24} />
-              </button>
-            </Dialog.Close>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-500 focus:outline-none"
+              aria-label="Close"
+            >
+              <X size={24} />
+            </button>
           </div>
         </div>
         <ScrollArea.Root className="flex-1 w-full h-full overflow-hidden bg-white rounded relative border border-gray-100">
@@ -121,40 +123,36 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
   };
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-overlayShow z-40" />
-        <Dialog.Content className="fixed left-[50%] top-[50%] max-h-[90vh] w-[95vw] max-w-[1000px] h-[85vh] translate-x-[-50%] translate-y-[-50%] rounded-[6px] bg-white p-[25px] shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] focus:outline-none data-[state=open]:animate-contentShow overflow-hidden flex flex-col z-50">
-          
-          {viewingTemplate ? (
-            <TemplateViewer 
-              title={viewingTemplate.title} 
-              content={viewingTemplate.content} 
-              onBack={() => setViewingTemplate(null)} 
-            />
-          ) : (
-            <>
-              {/* Header */}
-              <div className="flex justify-between items-start mb-4 border-b pb-4 flex-shrink-0">
-                <div className="pr-8">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 uppercase tracking-wider">
-                      {task.category}
-                    </span>
-                  </div>
-                  <Dialog.Title className="text-2xl font-bold text-gray-900 m-0">
-                    {task.title}
-                  </Dialog.Title>
+    <div className="h-screen w-[600px] bg-white shadow-2xl overflow-hidden flex flex-col border-l border-gray-200 animate-slideInFromRight">
+      <div className="p-6 flex flex-col h-full">
+        {viewingTemplate ? (
+          <TemplateViewer 
+            title={viewingTemplate.title} 
+            content={viewingTemplate.content} 
+            onBack={() => setViewingTemplate(null)} 
+          />
+        ) : (
+          <>
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4 border-b pb-4 flex-shrink-0">
+              <div className="pr-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 uppercase tracking-wider">
+                    {task.category}
+                  </span>
                 </div>
-                <Dialog.Close asChild>
-                  <button
-                    className="text-gray-400 hover:text-gray-500 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
-                    aria-label="Close"
-                  >
-                    <X size={24} />
-                  </button>
-                </Dialog.Close>
+                <h2 className="text-2xl font-bold text-gray-900 m-0">
+                  {task.title}
+                </h2>
               </div>
+              <button
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Close"
+              >
+                <X size={24} />
+              </button>
+            </div>
 
               {/* Body */}
               <ScrollArea.Root className="flex-1 w-full h-full overflow-hidden bg-white rounded relative">
@@ -162,10 +160,10 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                   <div className="space-y-8 pr-4 pb-4">
                     
                     {/* タスク概要とチェックリスト */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-gray-200 rounded-lg p-6">
-                      {/* 左：タスク概要 */}
+                    <div className="space-y-6 border border-gray-200 rounded-lg p-6">
+                      {/* タスク概要 */}
                       {task.overview && (
-                        <section className="md:pr-6 md:border-r border-gray-200">
+                        <section className="pb-6 border-b border-gray-200">
                           <h3 className="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
                             <HelpCircle size={18} className="mr-2" />
                             タスク概要
@@ -175,8 +173,8 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                           </p>
                         </section>
                       )}
-                      {/* 右：完了定義（チェックリスト） */}
-                      <section className="md:pl-6">
+                      {/* 完了定義（チェックリスト） */}
+                      <section>
                         <h3 className="flex items-center text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">
                           <CheckSquare size={18} className="mr-2" />
                           完了定義（チェックリスト）
@@ -273,9 +271,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
               </ScrollArea.Root>
             </>
           )}
-          
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      </div>
+    </div>
   );
 };

@@ -21,6 +21,7 @@ export default function Home() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -37,14 +38,71 @@ export default function Home() {
     loadData();
   }, [setNodes, setEdges]);
 
+  // 選択されたノードを強調表示
+  useEffect(() => {
+    if (selectedNodeId) {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === selectedNodeId) {
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5)',
+                borderColor: '#3b82f6',
+                borderWidth: '2px',
+              },
+            };
+          }
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              boxShadow: undefined,
+              borderColor: '#6b7280',
+              borderWidth: '1px',
+            },
+          };
+        })
+      );
+    } else {
+      // 選択解除時は元に戻す
+      setNodes((nds) =>
+        nds.map((node) => ({
+          ...node,
+          style: {
+            ...node.style,
+            boxShadow: undefined,
+            borderColor: '#6b7280',
+            borderWidth: '1px',
+          },
+        }))
+      );
+    }
+  }, [selectedNodeId, setNodes]);
+
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     const taskData = node.data as Task; // Node data contains the full task object
     setSelectedTask(taskData);
+    setSelectedNodeId(node.id);
     setIsDialogOpen(true);
   }, []);
 
+  const handleCloseDialog = useCallback(() => {
+    setIsDialogOpen(false);
+    setSelectedNodeId(null);
+  }, []);
+
   return (
-    <div className="h-screen w-full relative bg-slate-50">
+    <div className="h-screen w-full flex bg-slate-50">
+      {/* メインネットワークUI */}
+      <div 
+        className="relative bg-slate-50 transition-all duration-300 ease-in-out"
+        style={{ 
+          width: isDialogOpen ? 'calc(100% - 600px)' : '100%',
+          flexShrink: 0
+        }}
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -73,11 +131,13 @@ export default function Home() {
           <div className="flex items-center gap-2"><div className="w-3 h-3 bg-indigo-100 border border-gray-400 rounded"></div>デザイン</div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-100 border border-gray-400 rounded"></div>運営</div>
         </div>
+      </div>
 
+      {/* サイドカード */}
       <TaskDialog 
         task={selectedTask} 
         isOpen={isDialogOpen} 
-        onClose={() => setIsDialogOpen(false)} 
+        onClose={handleCloseDialog} 
       />
     </div>
   );
