@@ -121,14 +121,14 @@ export const getLayoutedElements = (tasks: Task[]): { nodes: Node[]; edges: Edge
   const nodes: Node[] = tasks.map((task) => {
     const nodeWithPosition = dagreGraph.node(task.id);
     
-    // カテゴリごとの色分け（時系列ベース5カテゴリ）
+    // カテゴリごとの色分け（機能別カテゴリ）
     let bg = '#fff';
     switch (task.category) {
-      case '企画': bg = '#bfdbfe'; break; // 青系 - 初期段階・基礎
-      case '準備': bg = '#bbf7d0'; break; // 緑系 - 成長・準備
-      case '直前': bg = '#fed7aa'; break; // オレンジ系 - 警告・注意
-      case '当日': bg = '#fca5a5'; break; // 赤系 - 実行・アクション
-      case '事後': bg = '#d1d5db'; break; // グレー系 - 完了・振り返り
+      case '企画': bg = '#bfdbfe'; break; // 青系 - 企画・戦略
+      case '広報': bg = '#bbf7d0'; break; // 緑系 - 広報・集客
+      case '営業': bg = '#fde68a'; break; // 黄色系 - 営業・交渉
+      case '制作': bg = '#e9d5ff'; break; // 紫系 - デザイン・制作
+      case '運営': bg = '#fecaca'; break; // 赤系 - 運営・実行
       default: bg = '#ffffff';
     }
 
