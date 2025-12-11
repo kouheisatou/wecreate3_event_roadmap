@@ -184,37 +184,12 @@ function embedMarkdownToSubtasksCsv(
   console.log(`   処理行数: ${rows.length - 1}行（ヘッダー除く）`);
 }
 
-/**
- * tasks.csvにマークダウンの内容を埋め込む（将来的な拡張用）
- */
-function embedMarkdownToTasksCsv(
-  inputCsvPath: string,
-  outputCsvPath: string,
-  publicDir: string
-): void {
-  console.log('📖 tasks.csvを読み込んでいます...');
-  const csvContent = fs.readFileSync(inputCsvPath, 'utf-8');
-  const rows = parseMultilineCsv(csvContent);
-  
-  if (rows.length === 0) {
-    console.error('❌ CSVファイルが空です');
-    return;
-  }
-  
-  // 現在のtasks.csvにはマークダウンファイルの参照がないため、そのままコピー
-  console.log('ℹ️  tasks.csvにはマークダウンファイルの参照がないため、そのままコピーします');
-  fs.copyFileSync(inputCsvPath, outputCsvPath);
-  console.log(`✅ 完了！ ${outputCsvPath} に保存しました`);
-}
-
 // メイン処理
 function main() {
   const projectRoot = path.resolve(__dirname, '..');
   const publicDir = path.join(projectRoot, 'public');
   const inputSubtasksCsv = path.join(publicDir, 'subtasks.csv');
   const outputSubtasksCsv = path.join(publicDir, 'subtasks_with_content.csv');
-  const inputTasksCsv = path.join(publicDir, 'tasks.csv');
-  const outputTasksCsv = path.join(publicDir, 'tasks_with_content.csv');
   
   console.log('🚀 マークダウンファイルをCSVに埋め込みます\n');
   console.log(`📂 プロジェクトルート: ${projectRoot}`);
@@ -229,17 +204,6 @@ function main() {
     console.log('');
   } else {
     console.error(`❌ ${inputSubtasksCsv} が見つかりません\n`);
-  }
-  
-  // tasks.csvを処理
-  if (fs.existsSync(inputTasksCsv)) {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📄 tasks.csv を処理中...');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    embedMarkdownToTasksCsv(inputTasksCsv, outputTasksCsv, publicDir);
-    console.log('');
-  } else {
-    console.error(`❌ ${inputTasksCsv} が見つかりません\n`);
   }
   
   console.log('🎉 全ての処理が完了しました！');

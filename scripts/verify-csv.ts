@@ -141,20 +141,16 @@ function main() {
   console.log('━'.repeat(60));
   console.log(`📂 公開ディレクトリ: ${publicDir}`);
   
-  const files = [
-    path.join(publicDir, 'subtasks_with_content.csv'),
-    path.join(publicDir, 'tasks_with_content.csv'),
-  ];
+  const subtasksCsvPath = path.join(publicDir, 'subtasks_with_content.csv');
   
-  for (const file of files) {
-    try {
-      verifyCsv(file);
-    } catch (error) {
-      console.error(`❌ エラー: ${error}`);
-    }
+  try {
+    verifyCsv(subtasksCsvPath);
+  } catch (error) {
+    console.error(`❌ エラー: ${error}`);
+    process.exit(1);
   }
   
-  console.log('🎉 全ての検証が完了しました！');
+  console.log('🎉 検証が完了しました！');
 }
 
 main();

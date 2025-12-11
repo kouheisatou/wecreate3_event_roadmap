@@ -1,0 +1,57 @@
+name: Embed Markdown to CSV
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - 'public/subtasks.csv'
+      - 'public/subtask_details/**/*.md'
+      - 'scripts/embed-md-to-csv.ts'
+
+  # 手動実行を許可
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  embed-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run embed script
+        run: npm run embed-md
+
+      - name: Verify generated CSV
+        run: npm run verify-csv
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [ -n "$(git status --porcelain public/subtasks_with_content.csv)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/subtasks_with_content.csv
+          git commit -m "🤖 Auto-update: Embed markdown content to CSV"
+          git push
