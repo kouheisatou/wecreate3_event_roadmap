@@ -122,14 +122,28 @@ export default function Home() {
         </ReactFlow>
         
         {/* 凡例 */}
-        <div className="absolute top-4 right-4 bg-white/90 p-3 rounded shadow-lg border text-xs space-y-2 pointer-events-none">
-          <div className="font-bold border-b pb-1 mb-1">カテゴリ</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-100 border border-gray-400 rounded"></div>企画</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-pink-100 border border-gray-400 rounded"></div>会場</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-orange-100 border border-gray-400 rounded"></div>スポンサー</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-100 border border-gray-400 rounded"></div>広報</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-indigo-100 border border-gray-400 rounded"></div>デザイン</div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-100 border border-gray-400 rounded"></div>運営</div>
+        <div className="absolute top-4 right-4 bg-white/90 p-3 rounded shadow-lg border text-sm space-y-2 pointer-events-none">
+          <div className="font-bold border-b pb-1 mb-1">フェーズ</div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-[#bfdbfe] border border-gray-400 rounded"></div>
+            <span>企画 (2タスク)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-[#bbf7d0] border border-gray-400 rounded"></div>
+            <span>準備 (9タスク)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-[#fed7aa] border border-gray-400 rounded"></div>
+            <span>直前 (1タスク)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-[#fca5a5] border border-gray-400 rounded"></div>
+            <span>当日 (2タスク)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-[#d1d5db] border border-gray-400 rounded"></div>
+            <span>事後 (2タスク)</span>
+          </div>
         </div>
       </div>
 

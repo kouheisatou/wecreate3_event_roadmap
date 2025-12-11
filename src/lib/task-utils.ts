@@ -87,7 +87,7 @@ export const parseTasks = async (): Promise<Task[]> => {
       id: row.id,
       title: row.title,
       category: row.category,
-      dependencies: row.dependencies ? row.dependencies.split('|').filter(Boolean) : [],
+      dependencies: row.dependencies ? row.dependencies.split(',').map(d => d.trim()).filter(Boolean) : [],
       checklist: row.checklist ? row.checklist.split('|').filter(Boolean) : [],
       overview: row.overview || '', // タスクの概要説明
       subtasks: subtasksByTaskId.get(row.id) || [],
@@ -121,16 +121,14 @@ export const getLayoutedElements = (tasks: Task[]): { nodes: Node[]; edges: Edge
   const nodes: Node[] = tasks.map((task) => {
     const nodeWithPosition = dagreGraph.node(task.id);
     
-    // カテゴリごとの色分け
+    // カテゴリごとの色分け（時系列ベース5カテゴリ）
     let bg = '#fff';
     switch (task.category) {
-      case '全体管理': bg = '#f3f4f6'; break;
-      case '会場': bg = '#fce7f3'; break;
-      case 'スポンサー': bg = '#ffedd5'; break;
-      case '広報': bg = '#dcfce7'; break;
-      case '登壇者': bg = '#dbeafe'; break;
-      case '制作物': bg = '#e0e7ff'; break;
-      case '運営': bg = '#fae8ff'; break;
+      case '企画': bg = '#bfdbfe'; break; // 青系 - 初期段階・基礎
+      case '準備': bg = '#bbf7d0'; break; // 緑系 - 成長・準備
+      case '直前': bg = '#fed7aa'; break; // オレンジ系 - 警告・注意
+      case '当日': bg = '#fca5a5'; break; // 赤系 - 実行・アクション
+      case '事後': bg = '#d1d5db'; break; // グレー系 - 完了・振り返り
       default: bg = '#ffffff';
     }
 
