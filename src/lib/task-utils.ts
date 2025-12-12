@@ -18,29 +18,129 @@ interface SubTaskRow {
   instructions: string;
   deliverables: string;
   estimated_hours: string;
-  template_files: string;
+  template_files?: string;
+  detail_content?: string; // Google Spreadsheetのdetail_contentカラム
 }
 
+/**
+ * Google SpreadsheetのCSVエクスポートURLを生成
+ * シートIDが指定されていない場合は、シート名を使用してURLを生成
+ */
+const getGoogleSheetCsvUrl = (spreadsheetId: string, sheetIdOrName: string): string => {
+  // シートIDが数値の場合はそのまま使用、そうでなければシート名として扱う
+  // シート名の場合は、URLエンコードが必要
+  const encodedSheetName = encodeURIComponent(sheetIdOrName);
+  // シート名を使用する場合は、gidの代わりにrangeパラメータを使用する方法もあるが、
+  // より確実なのはgidを使用すること。シート名からgidを取得するには別の方法が必要
+  // ここでは、まずgidを試し、失敗した場合はシート名を使用する方法を試す
+  return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${sheetIdOrName}`;
+};
+
 export const parseTasks = async (): Promise<Task[]> => {
-  // GitHub Pagesのリポジトリ名を設定
-  const isProd = process.env.NODE_ENV === 'production';
-  const basePath = isProd ? '/wecreate3_event_roadmap' : '';
+  // 環境変数からGoogle Spreadsheetの設定を取得
+  // クライアントサイドで実行されるため、NEXT_PUBLIC_プレフィックスが必要
+  const spreadsheetId = process.env.NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID;
+  const tasksSheetId = process.env.NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID || '0';
+  const subtasksSheetId = process.env.NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID || '0';
 
-  const [tasksRes, subtasksRes] = await Promise.all([
-    fetch(`${basePath}/tasks.csv`),
-    fetch(`${basePath}/subtasks.csv`)
-  ]);
+  // Google Spreadsheetが設定されている場合はそれを使用、そうでなければローカルCSVファイルを使用
+  const useGoogleSheet = !!spreadsheetId;
 
-  const [tasksCsv, subtasksCsv] = await Promise.all([
-    tasksRes.text(),
-    subtasksRes.text()
-  ]);
+  let tasksCsv: string;
+  let subtasksCsv: string;
+
+  if (useGoogleSheet) {
+    // Google Spreadsheetから読み込む
+    const tasksUrl = getGoogleSheetCsvUrl(spreadsheetId, tasksSheetId);
+    const subtasksUrl = getGoogleSheetCsvUrl(spreadsheetId, subtasksSheetId);
+
+    console.log('Fetching from Google Sheets:', { tasksUrl, subtasksUrl });
+
+    let tasksRes: Response;
+    let subtasksRes: Response;
+
+    try {
+      [tasksRes, subtasksRes] = await Promise.all([
+        fetch(tasksUrl),
+        fetch(subtasksUrl)
+      ]);
+    } catch (error) {
+      console.error('Network error fetching Google Sheets:', error);
+      throw new Error(`ネットワークエラー: Google Spreadsheetへの接続に失敗しました。スプレッドシートが一般公開されているか確認してください。`);
+    }
+
+    if (!tasksRes.ok) {
+      const errorText = await tasksRes.text().catch(() => '');
+      console.error('Tasks sheet fetch error:', {
+        status: tasksRes.status,
+        statusText: tasksRes.statusText,
+        url: tasksUrl,
+        errorText: errorText.substring(0, 200)
+      });
+      
+      // 400エラーの場合、シートIDが間違っている可能性がある
+      if (tasksRes.status === 400) {
+        throw new Error(
+          `タスクシートの取得に失敗しました（400エラー）。` +
+          `シートID（gid）が正しいか確認してください。` +
+          `\n現在のシートID: ${tasksSheetId}` +
+          `\nURL: ${tasksUrl}` +
+          `\n\nシートIDの確認方法:` +
+          `\n1. Google Spreadsheetで「tasks」シートのタブをクリック` +
+          `\n2. URLに #gid=数字 が表示されます` +
+          `\n3. その数字を .env の NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID に設定してください`
+        );
+      }
+      
+      throw new Error(`タスクシートの取得に失敗しました: ${tasksRes.status} ${tasksRes.statusText}`);
+    }
+    
+    if (!subtasksRes.ok) {
+      const errorText = await subtasksRes.text().catch(() => '');
+      console.error('Subtasks sheet fetch error:', {
+        status: subtasksRes.status,
+        statusText: subtasksRes.statusText,
+        url: subtasksUrl,
+        errorText: errorText.substring(0, 200)
+      });
+      
+      // 400エラーの場合、シートIDが間違っている可能性がある
+      if (subtasksRes.status === 400) {
+        throw new Error(
+          `サブタスクシートの取得に失敗しました（400エラー）。` +
+          `シートID（gid）が正しいか確認してください。` +
+          `\n現在のシートID: ${subtasksSheetId}` +
+          `\nURL: ${subtasksUrl}` +
+          `\n\nシートIDの確認方法:` +
+          `\n1. Google Spreadsheetで「subtasks」シートのタブをクリック` +
+          `\n2. URLに #gid=数字 が表示されます` +
+          `\n3. その数字を .env の NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID に設定してください`
+        );
+      }
+      
+      throw new Error(`サブタスクシートの取得に失敗しました: ${subtasksRes.status} ${subtasksRes.statusText}`);
+    }
+
+    tasksCsv = await tasksRes.text();
+    subtasksCsv = await subtasksRes.text();
+  } else {
+    // ローカルCSVファイルから読み込む（フォールバック）
+    const isProd = process.env.NODE_ENV === 'production';
+    const basePath = isProd ? '/wecreate3_event_roadmap' : '';
+
+    const [tasksRes, subtasksRes] = await Promise.all([
+      fetch(`${basePath}/tasks.csv`),
+      fetch(`${basePath}/subtasks.csv`)
+    ]);
+
+    tasksCsv = await tasksRes.text();
+    subtasksCsv = await subtasksRes.text();
+  }
 
   const tasksData = Papa.parse<TaskRow>(tasksCsv, { header: true, skipEmptyLines: true }).data;
   const subtasksData = Papa.parse<SubTaskRow>(subtasksCsv, { header: true, skipEmptyLines: true }).data;
 
   const subtasksByTaskId = new Map<string, SubTask[]>();
-  const templatePromises: Promise<void>[] = [];
 
   for (let i = 0; i < subtasksData.length; i++) {
     const row = subtasksData[i];
@@ -59,28 +159,31 @@ export const parseTasks = async (): Promise<Task[]> => {
       template_files: row.template_files,
     };
 
-    if (row.template_files) {
+    // detail_contentカラムが存在する場合はそれを使用（Google Spreadsheet形式）
+    if (row.detail_content) {
+      subtask.template_content = row.detail_content;
+    } else if (row.template_files && !useGoogleSheet) {
+      // フォールバック: ローカルファイルから読み込む場合のみ
       const templatePath = row.template_files;
-      // Ensure templatePath starts with a slash
       const normalizedTemplatePath = templatePath.startsWith('/') ? templatePath : `/${templatePath}`;
+      const isProd = process.env.NODE_ENV === 'production';
+      const basePath = isProd ? '/wecreate3_event_roadmap' : '';
       
-      templatePromises.push(
-        fetch(`${basePath}${normalizedTemplatePath}`)
-          .then(res => res.ok ? res.text() : '')
-          .then(content => {
-            subtask.template_content = content;
-          })
-          .catch(e => {
-            console.error(`Failed to load subtask detail: ${templatePath}`, e);
-            subtask.template_content = 'サブタスク詳細の読み込みに失敗しました。';
-          })
-      );
+      try {
+        const res = await fetch(`${basePath}${normalizedTemplatePath}`);
+        if (res.ok) {
+          subtask.template_content = await res.text();
+        } else {
+          subtask.template_content = 'サブタスク詳細の読み込みに失敗しました。';
+        }
+      } catch (e) {
+        console.error(`Failed to load subtask detail: ${templatePath}`, e);
+        subtask.template_content = 'サブタスク詳細の読み込みに失敗しました。';
+      }
     }
 
     subtasksByTaskId.get(taskId)!.push(subtask);
   }
-
-  await Promise.all(templatePromises);
 
   const tasks: Task[] = tasksData.map(row => {
     return {

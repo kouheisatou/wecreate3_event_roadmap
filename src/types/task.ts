@@ -7,6 +7,7 @@ export interface SubTask {
   estimated_hours: number;
   template_files?: string;
   template_content?: string;
+  detail_content?: string; // Google Spreadsheetのdetail_contentカラムから読み込むMarkdownコンテンツ
 }
 
 export interface Task {
