@@ -9,15 +9,35 @@ interface TaskDialogProps {
   task: Task | null;
   isOpen: boolean;
   onClose: () => void;
+  onSubtaskOpen?: (taskId: string, subtaskId: string) => void;
+  onSubtaskClose?: () => void;
+  selectedSubtaskId?: string | null;
 }
 
-export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose }) => {
-  const [viewingTemplate, setViewingTemplate] = useState<{ title: string; content: string } | null>(null);
+export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose, onSubtaskOpen, onSubtaskClose, selectedSubtaskId }) => {
+  const [viewingTemplate, setViewingTemplate] = useState<{ title: string; content: string; subtaskId: string } | null>(null);
 
   // タスクが変わった時にテンプレート表示をリセット
   useEffect(() => {
     setViewingTemplate(null);
   }, [task?.id]);
+
+  // URLパラメータからサブタスクを開く
+  useEffect(() => {
+    if (selectedSubtaskId && task && !viewingTemplate) {
+      const subtask = task.subtasks.find(sub => sub.id === selectedSubtaskId);
+      if (subtask && subtask.template_content) {
+        setViewingTemplate({ 
+          title: subtask.title, 
+          content: subtask.template_content,
+          subtaskId: subtask.id
+        });
+      }
+    } else if (!selectedSubtaskId && viewingTemplate) {
+      // サブタスクIDが削除された場合はテンプレート表示を閉じる
+      setViewingTemplate(null);
+    }
+  }, [selectedSubtaskId, task, viewingTemplate]);
 
   if (!isOpen || !task) return null;
 
@@ -29,6 +49,20 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
   const handleClose = () => {
     setViewingTemplate(null);
     onClose();
+  };
+
+  const handleSubtaskOpen = (subtaskId: string, title: string, content: string) => {
+    setViewingTemplate({ title, content, subtaskId });
+    if (onSubtaskOpen && task) {
+      onSubtaskOpen(task.id, subtaskId);
+    }
+  };
+
+  const handleSubtaskBack = () => {
+    setViewingTemplate(null);
+    if (onSubtaskClose) {
+      onSubtaskClose();
+    }
   };
 
   const TemplateViewer = ({ title, content, onBack }: { title: string, content: string, onBack: () => void }) => {
@@ -129,7 +163,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
           <TemplateViewer 
             title={viewingTemplate.title} 
             content={viewingTemplate.content} 
-            onBack={() => setViewingTemplate(null)} 
+            onBack={handleSubtaskBack} 
           />
         ) : (
           <>
@@ -240,7 +274,7 @@ export const TaskDialog: React.FC<TaskDialogProps> = ({ task, isOpen, onClose })
                                 <td className="px-4 py-3 text-sm align-top">
                                   {sub.template_content && (
                                     <button
-                                      onClick={() => setViewingTemplate({ title: sub.title, content: sub.template_content! })}
+                                      onClick={() => handleSubtaskOpen(sub.id, sub.title, sub.template_content!)}
                                       className="inline-flex items-center justify-center p-1.5 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 border border-purple-200 transition-colors"
                                       title="詳細を表示"
                                     >

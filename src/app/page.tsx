@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ReactFlow, {
   Node,
   Edge,
@@ -16,18 +17,22 @@ import { parseTasks, getLayoutedElements } from '@/lib/task-utils';
 import { Task, TaskNodeData } from '@/types/task';
 import { TaskDialog } from '@/components/TaskDialog';
 
-export default function Home() {
+export function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const tasks = await parseTasks();
-        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(tasks);
+        const loadedTasks = await parseTasks();
+        setTasks(loadedTasks);
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(loadedTasks);
         setNodes(layoutedNodes);
         setEdges(layoutedEdges);
       } catch (error) {
@@ -37,6 +42,26 @@ export default function Home() {
 
     loadData();
   }, [setNodes, setEdges]);
+
+  // URLパラメータからタスクを開く
+  const taskIdFromUrl = searchParams.get('task');
+  const subtaskIdFromUrl = searchParams.get('subtask');
+  
+  useEffect(() => {
+    if (taskIdFromUrl && tasks.length > 0) {
+      const task = tasks.find(t => t.id === taskIdFromUrl);
+      if (task) {
+        setSelectedTask(task);
+        setSelectedNodeId(taskIdFromUrl);
+        setIsDialogOpen(true);
+      }
+    } else if (!taskIdFromUrl) {
+      // URLにタスクIDがない場合はダイアログを閉じる
+      setIsDialogOpen(false);
+      setSelectedTask(null);
+      setSelectedNodeId(null);
+    }
+  }, [taskIdFromUrl, tasks]);
 
   // 選択されたノードを強調表示
   useEffect(() => {
@@ -86,12 +111,23 @@ export default function Home() {
     setSelectedTask(taskData);
     setSelectedNodeId(node.id);
     setIsDialogOpen(true);
-  }, []);
+    // URLを更新
+    const params = new URLSearchParams(window.location.search);
+    params.set('task', node.id);
+    params.delete('subtask'); // サブタスクパラメータをクリア
+    router.push(`?${params.toString()}`, { scroll: false });
+  }, [router]);
 
   const handleCloseDialog = useCallback(() => {
     setIsDialogOpen(false);
     setSelectedNodeId(null);
-  }, []);
+    // URLからパラメータを削除
+    const params = new URLSearchParams(window.location.search);
+    params.delete('task');
+    params.delete('subtask');
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    router.push(newUrl, { scroll: false });
+  }, [router]);
 
   return (
     <div className="h-screen w-full flex bg-slate-50">
@@ -151,9 +187,30 @@ export default function Home() {
       <TaskDialog 
         task={selectedTask} 
         isOpen={isDialogOpen} 
-        onClose={handleCloseDialog} 
+        onClose={handleCloseDialog}
+        onSubtaskOpen={(taskId: string, subtaskId: string) => {
+          const params = new URLSearchParams(window.location.search);
+          params.set('task', taskId);
+          params.set('subtask', subtaskId);
+          router.push(`?${params.toString()}`, { scroll: false });
+        }}
+        onSubtaskClose={() => {
+          const params = new URLSearchParams(window.location.search);
+          params.delete('subtask');
+          const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+          router.push(newUrl, { scroll: false });
+        }}
+        selectedSubtaskId={subtaskIdFromUrl}
       />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center">読み込み中...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
 
