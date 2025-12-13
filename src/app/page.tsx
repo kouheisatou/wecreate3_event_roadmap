@@ -129,7 +129,7 @@ export function HomeContent() {
     const params = new URLSearchParams(window.location.search);
     params.delete('task');
     params.delete('subtask');
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    const newUrl = params.toString() ? `?${params.toString()}` : '/';
     router.push(newUrl, { scroll: false });
   }, [router]);
 
@@ -235,7 +235,7 @@ export function HomeContent() {
         onSubtaskClose={() => {
           const params = new URLSearchParams(window.location.search);
           params.delete('subtask');
-          const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+          const newUrl = params.toString() ? `?${params.toString()}` : '/';
           router.push(newUrl, { scroll: false });
         }}
         selectedSubtaskId={subtaskIdFromUrl}
