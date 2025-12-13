@@ -26,10 +26,12 @@ export function HomeContent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setError(null);
         const loadedTasks = await parseTasks();
         setTasks(loadedTasks);
         const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(loadedTasks);
@@ -37,6 +39,8 @@ export function HomeContent() {
         setEdges(layoutedEdges);
       } catch (error) {
         console.error('Failed to load tasks:', error);
+        const errorMessage = error instanceof Error ? error.message : 'データの読み込みに失敗しました';
+        setError(errorMessage);
       }
     };
 
@@ -128,6 +132,40 @@ export function HomeContent() {
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     router.push(newUrl, { scroll: false });
   }, [router]);
+
+  // エラーが発生した場合は、エラーメッセージを表示
+  if (error) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <div className="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg border border-red-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Google Spreadsheetの設定が必要です</h1>
+          </div>
+          <div className="text-gray-700 whitespace-pre-line mb-6">
+            {error}
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h2 className="font-semibold text-blue-900 mb-2">設定手順:</h2>
+            <ol className="list-decimal list-inside space-y-2 text-blue-800">
+              <li>.env.localファイルに以下の環境変数を設定してください:</li>
+              <li className="ml-6 font-mono text-sm bg-white p-2 rounded border">
+                NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID=あなたのスプレッドシートID<br/>
+                NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID=タスクシートのgid<br/>
+                NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID=サブタスクシートのgid
+              </li>
+              <li>Google Spreadsheetを一般公開（リンクを知っている全員が閲覧可能）に設定してください</li>
+              <li>シートID（gid）は、Google SpreadsheetのURLの#gid=の後の数字です</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full flex bg-slate-50">

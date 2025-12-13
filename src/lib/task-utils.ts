@@ -66,7 +66,13 @@ export const parseTasks = async (): Promise<Task[]> => {
       ]);
     } catch (error) {
       console.error('Network error fetching Google Sheets:', error);
-      throw new Error(`ネットワークエラー: Google Spreadsheetへの接続に失敗しました。スプレッドシートが一般公開されているか確認してください。`);
+      throw new Error(
+        `Google Spreadsheetへの接続に失敗しました。\n\n` +
+        `以下の設定を確認してください:\n` +
+        `1. Google Spreadsheetが一般公開（リンクを知っている全員が閲覧可能）に設定されているか\n` +
+        `2. スプレッドシートID（NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID）が正しいか\n` +
+        `3. シートID（NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID、NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID）が正しいか`
+      );
     }
 
     if (!tasksRes.ok) {
@@ -81,18 +87,26 @@ export const parseTasks = async (): Promise<Task[]> => {
       // 400エラーの場合、シートIDが間違っている可能性がある
       if (tasksRes.status === 400) {
         throw new Error(
-          `タスクシートの取得に失敗しました（400エラー）。` +
-          `シートID（gid）が正しいか確認してください。` +
-          `\n現在のシートID: ${tasksSheetId}` +
-          `\nURL: ${tasksUrl}` +
-          `\n\nシートIDの確認方法:` +
-          `\n1. Google Spreadsheetで「tasks」シートのタブをクリック` +
-          `\n2. URLに #gid=数字 が表示されます` +
-          `\n3. その数字を .env の NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID に設定してください`
+          `Google Spreadsheetの設定が必要です。\n\n` +
+          `タスクシートの取得に失敗しました（400エラー）。\n` +
+          `シートID（gid）が正しいか確認してください。\n\n` +
+          `現在のシートID: ${tasksSheetId}\n` +
+          `URL: ${tasksUrl}\n\n` +
+          `シートIDの確認方法:\n` +
+          `1. Google Spreadsheetで「tasks」シートのタブをクリック\n` +
+          `2. URLに #gid=数字 が表示されます\n` +
+          `3. その数字を .env.local の NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID に設定してください`
         );
       }
       
-      throw new Error(`タスクシートの取得に失敗しました: ${tasksRes.status} ${tasksRes.statusText}`);
+      throw new Error(
+        `Google Spreadsheetの設定が必要です。\n\n` +
+        `タスクシートの取得に失敗しました: ${tasksRes.status} ${tasksRes.statusText}\n\n` +
+        `以下の設定を確認してください:\n` +
+        `1. Google Spreadsheetが一般公開（リンクを知っている全員が閲覧可能）に設定されているか\n` +
+        `2. スプレッドシートID（NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID）が正しいか\n` +
+        `3. シートID（NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID）が正しいか`
+      );
     }
     
     if (!subtasksRes.ok) {
@@ -107,18 +121,26 @@ export const parseTasks = async (): Promise<Task[]> => {
       // 400エラーの場合、シートIDが間違っている可能性がある
       if (subtasksRes.status === 400) {
         throw new Error(
-          `サブタスクシートの取得に失敗しました（400エラー）。` +
-          `シートID（gid）が正しいか確認してください。` +
-          `\n現在のシートID: ${subtasksSheetId}` +
-          `\nURL: ${subtasksUrl}` +
-          `\n\nシートIDの確認方法:` +
-          `\n1. Google Spreadsheetで「subtasks」シートのタブをクリック` +
-          `\n2. URLに #gid=数字 が表示されます` +
-          `\n3. その数字を .env の NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID に設定してください`
+          `Google Spreadsheetの設定が必要です。\n\n` +
+          `サブタスクシートの取得に失敗しました（400エラー）。\n` +
+          `シートID（gid）が正しいか確認してください。\n\n` +
+          `現在のシートID: ${subtasksSheetId}\n` +
+          `URL: ${subtasksUrl}\n\n` +
+          `シートIDの確認方法:\n` +
+          `1. Google Spreadsheetで「subtasks」シートのタブをクリック\n` +
+          `2. URLに #gid=数字 が表示されます\n` +
+          `3. その数字を .env.local の NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID に設定してください`
         );
       }
       
-      throw new Error(`サブタスクシートの取得に失敗しました: ${subtasksRes.status} ${subtasksRes.statusText}`);
+      throw new Error(
+        `Google Spreadsheetの設定が必要です。\n\n` +
+        `サブタスクシートの取得に失敗しました: ${subtasksRes.status} ${subtasksRes.statusText}\n\n` +
+        `以下の設定を確認してください:\n` +
+        `1. Google Spreadsheetが一般公開（リンクを知っている全員が閲覧可能）に設定されているか\n` +
+        `2. スプレッドシートID（NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID）が正しいか\n` +
+        `3. シートID（NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID）が正しいか`
+      );
     }
 
     tasksCsv = await tasksRes.text();
