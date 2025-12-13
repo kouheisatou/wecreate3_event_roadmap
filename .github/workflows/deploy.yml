@@ -19,6 +19,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID: 1B8KWvikrWLXE4lAduWsUiHt0budmChAEpybRPfrVgxU
+      NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID: "1370854490"
+      NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID: "1369560427"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
