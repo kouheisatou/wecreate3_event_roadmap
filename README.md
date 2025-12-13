@@ -622,6 +622,152 @@ Email: [メールアドレス]
 
 ---
 
+## CSVファイルからGoogle Sheetsへの上書き手順
+
+`public/tasks.csv` または `public/subtasks_with_content.csv` を変更した場合、これらのファイルの内容を `.env` に設定されたGoogle Sheetsに上書きする必要があります。
+
+### 前提条件
+
+- `.env.local` または `.env` に以下の環境変数が設定されていること：
+  - `NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID`: Google SpreadsheetのID
+  - `NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID`: タスクシートのID（gid）
+  - `NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID`: サブタスクシートのID（gid）
+
+### 方法1: Google Sheetsのインポート機能を使用（推奨・簡単）
+
+#### ステップ1: CSVファイルの準備
+
+変更したCSVファイルを確認します：
+- `public/tasks.csv` → タスクシートに上書き
+- `public/subtasks_with_content.csv` → サブタスクシートに上書き
+
+#### ステップ2: Google Sheetsを開く
+
+1. ブラウザでGoogle Sheetsを開く
+2. `.env` に設定された `NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID` に対応するスプレッドシートを開く
+
+#### ステップ3: シートをクリア
+
+上書きするシートの内容を削除します：
+
+1. **タスクシートの場合**:
+   - `.env` の `NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID` で指定されたシートのタブをクリック
+   - シート全体を選択（`Ctrl+A` / `Cmd+A`）
+   - 削除（`Delete` キー）
+
+2. **サブタスクシートの場合**:
+   - `.env` の `NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID` で指定されたシートのタブをクリック
+   - シート全体を選択（`Ctrl+A` / `Cmd+A`）
+   - 削除（`Delete` キー）
+
+#### ステップ4: CSVファイルをインポート
+
+1. Google Sheetsのメニューから「ファイル」→「インポート」を選択
+2. 「アップロード」タブを選択
+3. 対応するCSVファイルをドラッグ&ドロップまたは「ファイルを選択」から選択
+   - `public/tasks.csv` → タスクシートにインポート
+   - `public/subtasks_with_content.csv` → サブタスクシートにインポート
+4. インポート設定を確認：
+   - **インポート場所**: 「既存のシートを置き換える」を選択
+   - **区切り文字の種類**: 「カンマ」を選択
+   - **変換**: 「テキストを数値、日付、数式に変換する」のチェックを外す（推奨）
+5. 「データをインポート」をクリック
+
+#### ステップ5: 確認
+
+インポート後、以下を確認します：
+- [ ] データが正しくインポートされているか
+- [ ] ヘッダー行が正しく表示されているか
+- [ ] 特殊文字や改行が正しく表示されているか
+- [ ] アプリケーションでデータが正しく読み込まれるか
+
+### 方法2: Google Apps Scriptを使用（自動化）
+
+より自動化された方法として、Google Apps Scriptを使用してCSVファイルをアップロードするスクリプトを作成することもできます。
+
+#### ステップ1: Google Apps Scriptエディタを開く
+
+1. Google Sheetsで「拡張機能」→「Apps Script」を選択
+2. 新しいスクリプトファイルを作成
+
+#### ステップ2: スクリプトを作成
+
+以下のようなスクリプトを作成します（参考例）：
+
+```javascript
+function importCsvFromUrl() {
+  // CSVファイルのURL（GitHubのraw URLなど）
+  const tasksCsvUrl = 'https://raw.githubusercontent.com/your-repo/main/public/tasks.csv';
+  const subtasksCsvUrl = 'https://raw.githubusercontent.com/your-repo/main/public/subtasks_with_content.csv';
+  
+  // スプレッドシートとシートを取得
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const tasksSheet = spreadsheet.getSheetById(0); // シートIDを指定
+  const subtasksSheet = spreadsheet.getSheetById(0); // シートIDを指定
+  
+  // CSVを取得してパース
+  const tasksCsv = UrlFetchApp.fetch(tasksCsvUrl).getContentText();
+  const subtasksCsv = UrlFetchApp.fetch(subtasksCsvUrl).getContentText();
+  
+  // シートをクリア
+  tasksSheet.clear();
+  subtasksSheet.clear();
+  
+  // CSVをパースして書き込み
+  const tasksData = Utilities.parseCsv(tasksCsv);
+  const subtasksData = Utilities.parseCsv(subtasksCsv);
+  
+  tasksSheet.getRange(1, 1, tasksData.length, tasksData[0].length).setValues(tasksData);
+  subtasksSheet.getRange(1, 1, subtasksData.length, subtasksData[0].length).setValues(subtasksData);
+}
+```
+
+#### ステップ3: スクリプトを実行
+
+1. スクリプトを保存
+2. 「実行」ボタンをクリック
+3. 初回実行時は認証が必要です
+
+**注意**: この方法は、CSVファイルが公開URLでアクセス可能である必要があります（GitHubのraw URLなど）。
+
+### 方法3: ローカルスクリプトを作成（推奨・自動化）
+
+プロジェクトに専用のスクリプトを作成して、CSVファイルをGoogle Sheetsにアップロードする方法です。
+
+#### 必要な準備
+
+1. Google Sheets APIを有効化
+2. サービスアカウントを作成して認証情報を取得
+3. スプレッドシートにサービスアカウントのメールアドレスを共有（編集権限）
+
+#### スクリプトの作成例
+
+`scripts/upload-csv-to-sheets.ts` のようなスクリプトを作成し、`googleapis` パッケージを使用してアップロードを実装します。
+
+**注意**: この方法は実装が複雑なため、まずは方法1（手動インポート）を使用することを推奨します。
+
+### トラブルシューティング
+
+#### CSVが正しくインポートされない場合
+
+- **エンコーディング**: CSVファイルがUTF-8で保存されているか確認
+- **区切り文字**: カンマ区切りになっているか確認
+- **改行文字**: フィールド内の改行が正しくエスケープされているか確認（ダブルクォートで囲まれているか）
+
+#### データが壊れているように見える場合
+
+- **特殊文字**: 日本語や特殊文字が正しく表示されているか確認
+- **改行**: フィールド内の改行が正しく表示されているか確認
+- **カンマ**: フィールド内のカンマが正しく処理されているか確認
+
+#### アプリケーションでデータが読み込まれない場合
+
+- **シートID**: `.env` の `NEXT_PUBLIC_GOOGLE_TASKS_SHEET_ID` と `NEXT_PUBLIC_GOOGLE_SUBTASKS_SHEET_ID` が正しいか確認
+- **スプレッドシートID**: `.env` の `NEXT_PUBLIC_GOOGLE_SPREADSHEET_ID` が正しいか確認
+- **公開設定**: Google Spreadsheetが「リンクを知っている全員が閲覧可能」に設定されているか確認
+
+---
+
 ## ライセンス
 
 MITライセンス
